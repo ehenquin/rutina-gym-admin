@@ -1,0 +1,1468 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Privado - Rutina Gym</title>
+    <style>
+      :root {
+        --bg: #090b10;
+        --surface: #111620;
+        --surface-2: #171d29;
+        --surface-3: #202838;
+        --border: #293244;
+        --text: #f4f7fb;
+        --muted: #9aa7ba;
+        --primary: #4f8cff;
+        --primary-2: #76a7ff;
+        --success: #2ec27e;
+        --danger: #ff5d6c;
+        --warning: #f6c85f;
+        --info: #36c5f0;
+        --radius: 10px;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+        --font: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(79, 140, 255, 0.15), transparent 34%),
+          linear-gradient(180deg, #090b10 0%, #0d1119 100%);
+        color: var(--text);
+        font-family: var(--font);
+        line-height: 1.45;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      #loginScreen {
+        width: min(380px, calc(100% - 32px));
+        margin: 11vh auto 0;
+        padding: 24px;
+        background: rgba(17, 22, 32, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      #loginScreen h2 {
+        margin: 0 0 6px;
+        font-size: 1.35rem;
+      }
+
+      .login-subtitle {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      #adminPassword,
+      #searchInput {
+        width: 100%;
+        min-height: 42px;
+        color: var(--text);
+        background: #0b1018;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+      }
+
+      #adminPassword {
+        padding: 0 12px;
+        margin-bottom: 12px;
+      }
+
+      #adminPassword:focus,
+      #searchInput:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.18);
+      }
+
+      .primary-btn,
+      .secondary-btn,
+      .action-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 9px;
+        color: var(--text);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .primary-btn {
+        width: 100%;
+        background: var(--primary);
+        font-weight: 700;
+      }
+
+      .primary-btn:hover,
+      .secondary-btn:hover,
+      .action-toggle:hover {
+        filter: brightness(1.08);
+      }
+
+      .primary-btn:disabled {
+        cursor: wait;
+        opacity: 0.72;
+      }
+
+      .secondary-btn,
+      .action-toggle {
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+      }
+
+      .login-error {
+        margin: 12px 0 0;
+        padding: 9px 10px;
+        color: #ffdfe4;
+        background: rgba(255, 93, 108, 0.16);
+        border: 1px solid rgba(255, 93, 108, 0.34);
+        border-radius: 9px;
+        font-size: 0.9rem;
+      }
+
+      .app-shell {
+        width: min(1480px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 18px 0 28px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 18px;
+        background: rgba(17, 22, 32, 0.92);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: clamp(1.25rem, 2vw, 1.7rem);
+        letter-spacing: 0;
+      }
+
+      .topbar-meta {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .status-pill {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 11px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.86rem;
+      }
+
+      .status-pill.error {
+        color: #ffdfe4;
+        background: rgba(255, 93, 108, 0.16);
+        border-color: rgba(255, 93, 108, 0.36);
+      }
+
+      .payment-alert {
+        margin: 14px 0 0;
+        padding: 10px 13px;
+        color: #fff4d8;
+        background: rgba(246, 200, 95, 0.13);
+        border: 1px solid rgba(246, 200, 95, 0.35);
+        border-radius: var(--radius);
+        font-size: 0.93rem;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(138px, 1fr));
+        gap: 10px;
+        margin: 14px 0;
+      }
+
+      .summary-card {
+        min-height: 92px;
+        padding: 13px;
+        text-align: left;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+      }
+
+      .summary-card:hover,
+      .summary-card.active {
+        border-color: rgba(79, 140, 255, 0.72);
+        background: linear-gradient(180deg, #172133 0%, #121925 100%);
+      }
+
+      .summary-card.active {
+        box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.28);
+      }
+
+      .summary-label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .summary-value {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.65rem;
+        font-weight: 800;
+      }
+
+      .table-panel {
+        background: rgba(17, 22, 32, 0.96);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+      }
+
+      .table-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #searchInput {
+        max-width: 520px;
+        padding: 0 13px;
+      }
+
+      .result-count {
+        color: var(--muted);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      .table-wrap {
+        max-height: calc(100vh - 320px);
+        min-height: 280px;
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 1180px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 11px 12px;
+        border-bottom: 1px solid rgba(41, 50, 68, 0.72);
+        text-align: left;
+        vertical-align: middle;
+        font-size: 0.88rem;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        color: var(--muted);
+        background: #101722;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .user-name {
+        font-weight: 750;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 23px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .badge-pendiente {
+        color: #fff5ce;
+        background: rgba(246, 200, 95, 0.18);
+      }
+
+      .badge-prueba {
+        color: #dff7ff;
+        background: rgba(54, 197, 240, 0.18);
+      }
+
+      .badge-activo,
+      .badge-pago-si,
+      .badge-estado-aprobado {
+        color: #dbffe9;
+        background: rgba(46, 194, 126, 0.18);
+      }
+
+      .badge-bloqueado,
+      .badge-vencido,
+      .badge-estado-rechazado {
+        color: #ffe1e5;
+        background: rgba(255, 93, 108, 0.18);
+      }
+
+      .badge-pago-no,
+      .badge-estado-pendiente,
+      .badge-muted {
+        color: #d6deeb;
+        background: rgba(154, 167, 186, 0.16);
+      }
+
+      .actions-cell {
+        position: relative;
+        width: 120px;
+      }
+
+      .action-menu {
+        position: fixed;
+        z-index: 20;
+        width: min(292px, calc(100vw - 16px));
+        max-height: min(430px, calc(100vh - 16px));
+        padding: 8px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: rgba(18, 25, 37, 0.98);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .action-row {
+        width: 100%;
+        min-height: 42px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 10px;
+        color: var(--text);
+        background: transparent;
+        border-radius: 9px;
+        text-align: left;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition:
+          background 0.16s ease,
+          transform 0.16s ease,
+          color 0.16s ease;
+      }
+
+      .action-row:hover {
+        background: var(--surface-3);
+      }
+
+      .action-row:active {
+        transform: scale(0.985);
+      }
+
+      .action-row.is-current {
+        color: #d7e0ee;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .action-row.is-current:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .action-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.91rem;
+        font-weight: 650;
+      }
+
+      .action-indicator {
+        min-width: 28px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .indicator-ok {
+        color: #c8f6dc;
+        background: rgba(46, 194, 126, 0.16);
+      }
+
+      .indicator-warning {
+        color: #ffe7a8;
+        background: rgba(246, 200, 95, 0.16);
+      }
+
+      .indicator-danger {
+        color: #ffcbd1;
+        background: rgba(255, 93, 108, 0.16);
+      }
+
+      .indicator-muted {
+        color: #aeb8c8;
+        background: rgba(154, 167, 186, 0.11);
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(3, 6, 12, 0.68);
+        backdrop-filter: blur(8px);
+      }
+
+      .modal-panel {
+        width: min(430px, 100%);
+        padding: 18px;
+        color: var(--text);
+        background: rgba(17, 22, 32, 0.98);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .modal-panel h2 {
+        margin: 0 0 8px;
+        font-size: 1.15rem;
+      }
+
+      .modal-panel p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .modal-input {
+        width: 100%;
+        min-height: 96px;
+        margin-top: 14px;
+        padding: 11px;
+        color: var(--text);
+        background: #0b1018;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+        resize: vertical;
+      }
+
+      .modal-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.18);
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .modal-btn {
+        min-height: 38px;
+        padding: 0 14px;
+        color: var(--text);
+        border-radius: 9px;
+        cursor: pointer;
+      }
+
+      .modal-btn.cancel {
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+      }
+
+      .modal-btn.primary {
+        background: var(--primary);
+      }
+
+      .modal-btn.success {
+        background: var(--success);
+        color: #06130c;
+      }
+
+      .modal-btn.warning {
+        background: var(--warning);
+        color: #1b1400;
+      }
+
+      .modal-btn.danger {
+        background: var(--danger);
+      }
+
+      .toast-stack {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 70;
+        display: grid;
+        gap: 8px;
+        width: min(360px, calc(100vw - 32px));
+      }
+
+      .toast {
+        padding: 11px 13px;
+        color: var(--text);
+        background: rgba(17, 22, 32, 0.98);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        font-size: 0.92rem;
+      }
+
+      .toast.success {
+        border-color: rgba(46, 194, 126, 0.42);
+      }
+
+      .toast.error {
+        border-color: rgba(255, 93, 108, 0.48);
+      }
+
+      .toast.warning {
+        border-color: rgba(246, 200, 95, 0.5);
+      }
+
+      .toast.info {
+        border-color: rgba(79, 140, 255, 0.45);
+      }
+
+      .empty-state {
+        padding: 46px 16px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (max-width: 1100px) {
+        .summary-grid {
+          grid-template-columns: repeat(4, minmax(138px, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .app-shell {
+          width: min(100% - 18px, 1480px);
+          padding-top: 9px;
+        }
+
+        .topbar,
+        .table-tools {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .toolbar {
+          justify-content: stretch;
+        }
+
+        .toolbar > * {
+          flex: 1 1 auto;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .summary-card {
+          min-height: 82px;
+        }
+
+        #searchInput {
+          max-width: none;
+        }
+
+        .table-wrap {
+          max-height: calc(100vh - 380px);
+        }
+
+        .modal-overlay {
+          align-items: flex-end;
+          padding: 12px;
+        }
+
+        .modal-actions {
+          flex-direction: column-reverse;
+        }
+
+        .modal-btn {
+          width: 100%;
+        }
+
+        .toast-stack {
+          top: auto;
+          right: 10px;
+          bottom: 10px;
+          left: 10px;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loginScreen" class="hidden">
+      <h2>Acceso administrador</h2>
+      <p class="login-subtitle">Panel privado de Rutina Gym</p>
+      <input type="password" id="adminPassword" placeholder="Contraseña" autocomplete="current-password" />
+      <button id="loginBtn" class="primary-btn">Ingresar</button>
+      <p id="loginError" class="login-error hidden">Clave incorrecta o no autorizada</p>
+    </div>
+
+    <main id="app" class="app-shell hidden">
+      <header class="topbar">
+        <div>
+          <h1>Panel privado</h1>
+          <p class="topbar-meta">Rutina Gym v8</p>
+        </div>
+        <div class="toolbar">
+          <span id="connectionStatus" class="status-pill hidden"></span>
+          <button id="refreshBtn" class="secondary-btn">Actualizar</button>
+          <button id="logoutBtn" class="secondary-btn">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <div id="paymentAlert" class="payment-alert hidden"></div>
+      <section id="summaryCards" class="summary-grid"></section>
+
+      <section class="table-panel">
+        <div class="table-tools">
+          <input id="searchInput" type="search" placeholder="Buscar por nombre, mail, teléfono o alias..." />
+          <span id="resultCount" class="result-count">Sin datos cargados</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Mail</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Pago</th>
+                <th>EstadoPago</th>
+                <th>Vencimiento</th>
+                <th>Alias</th>
+                <th>Monto</th>
+                <th>Plan</th>
+                <th>Último acceso</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="13" class="empty-state">Sin datos cargados</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const APPS_SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbyj7rZxYR5KVnpquzad0hvklgVnhMOA3Ybe4UTYWk4nNVyLZ1C0-4xYUQEM29wpFiBq/exec";
+      const APPS_SCRIPT_API_KEY = "PEGAR_API_KEY_PRIVADA_APPS_SCRIPT";
+      const STORAGE_KEY = "rutina_gym_admin_ok";
+
+      const state = {
+        users: [],
+        activeFilter: "todos",
+        search: "",
+        refreshTimer: null,
+        appStarted: false,
+        loadingUsers: false,
+        lastPendingPayments: null,
+        menuEl: null,
+      };
+
+      const loginScreen = document.getElementById("loginScreen");
+      const appRoot = document.getElementById("app");
+      const passwordInput = document.getElementById("adminPassword");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginError = document.getElementById("loginError");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const connectionStatus = document.getElementById("connectionStatus");
+      const paymentAlert = document.getElementById("paymentAlert");
+      const summaryCards = document.getElementById("summaryCards");
+      const searchInput = document.getElementById("searchInput");
+      const resultCount = document.getElementById("resultCount");
+      const usersTableBody = document.getElementById("usersTableBody");
+
+      function setAdminSession(ok) {
+        localStorage.setItem(STORAGE_KEY, ok ? "true" : "false");
+      }
+
+      function isAdminLogged() {
+        return localStorage.getItem(STORAGE_KEY) === "true";
+      }
+
+      function show(el) {
+        el.classList.remove("hidden");
+      }
+
+      function hide(el) {
+        el.classList.add("hidden");
+      }
+
+      function normalize(value) {
+        return String(value || "").trim();
+      }
+
+      function upper(value) {
+        return normalize(value).toUpperCase();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function formatDate(value) {
+        if (!value) return "-";
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? escapeHtml(value) : d.toLocaleDateString();
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "-";
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? escapeHtml(value) : d.toLocaleString();
+      }
+
+      function showStatus(message, isError = false) {
+        connectionStatus.textContent = message;
+        connectionStatus.classList.toggle("error", isError);
+        show(connectionStatus);
+      }
+
+      function showToast(message, type = "info") {
+        let stack = document.querySelector(".toast-stack");
+
+        if (!stack) {
+          stack = document.createElement("div");
+          stack.className = "toast-stack";
+          document.body.appendChild(stack);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        stack.appendChild(toast);
+
+        setTimeout(() => {
+          toast.remove();
+          if (!stack.children.length) stack.remove();
+        }, 3000);
+      }
+
+      function createModalBase(options) {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.innerHTML = `
+          <div class="modal-panel" role="dialog" aria-modal="true">
+            <h2>${escapeHtml(options.title || "Confirmar acción")}</h2>
+            <p>${escapeHtml(options.message || "")}</p>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        return {
+          overlay,
+          panel: overlay.querySelector(".modal-panel"),
+        };
+      }
+
+      async function showConfirmModal(options) {
+        return new Promise((resolve) => {
+          const tone = options.tone || "primary";
+          const { overlay, panel } = createModalBase(options);
+          panel.insertAdjacentHTML(
+            "beforeend",
+            `
+              <div class="modal-actions">
+                <button class="modal-btn cancel" data-modal-cancel>${escapeHtml(options.cancelText || "Cancelar")}</button>
+                <button class="modal-btn ${tone}" data-modal-confirm>${escapeHtml(options.confirmText || "Confirmar")}</button>
+              </div>
+            `,
+          );
+
+          const finish = (value) => {
+            document.removeEventListener("keydown", onKeyDown);
+            overlay.remove();
+            resolve(value);
+          };
+          const onKeyDown = (event) => {
+            if (event.key === "Escape") finish(false);
+            if (event.key === "Enter") finish(true);
+          };
+
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) finish(false);
+          });
+          panel.querySelector("[data-modal-cancel]").addEventListener("click", () => finish(false));
+          panel.querySelector("[data-modal-confirm]").addEventListener("click", () => finish(true));
+          document.addEventListener("keydown", onKeyDown);
+          panel.querySelector("[data-modal-confirm]").focus();
+        });
+      }
+
+      async function showInputModal(options) {
+        return new Promise((resolve) => {
+          const { overlay, panel } = createModalBase(options);
+          panel.insertAdjacentHTML(
+            "beforeend",
+            `
+              <textarea class="modal-input" placeholder="${escapeHtml(options.placeholder || "")}">${escapeHtml(options.value || "")}</textarea>
+              <div class="modal-actions">
+                <button class="modal-btn cancel" data-modal-cancel>${escapeHtml(options.cancelText || "Cancelar")}</button>
+                <button class="modal-btn primary" data-modal-confirm>${escapeHtml(options.confirmText || "Guardar")}</button>
+              </div>
+            `,
+          );
+
+          const input = panel.querySelector(".modal-input");
+          const finish = (value) => {
+            document.removeEventListener("keydown", onKeyDown);
+            overlay.remove();
+            resolve(value);
+          };
+          const onKeyDown = (event) => {
+            if (event.key === "Escape") finish(null);
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+              finish(input.value);
+            }
+          };
+
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) finish(null);
+          });
+          panel.querySelector("[data-modal-cancel]").addEventListener("click", () => finish(null));
+          panel.querySelector("[data-modal-confirm]").addEventListener("click", () => finish(input.value));
+          document.addEventListener("keydown", onKeyDown);
+          input.focus();
+          input.select();
+        });
+      }
+
+      async function validarLoginAdmin() {
+        if (loginBtn.disabled) return;
+
+        const clave = passwordInput.value.trim();
+        if (!clave) {
+          loginError.textContent = "Ingrese la clave administrativa.";
+          show(loginError);
+          return;
+        }
+
+        hide(loginError);
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Validando...";
+
+        try {
+          const data = await callAppsScript("validarClavePrivado", { clave }, false);
+          if (data.ok === true && data.autorizado === true) {
+            setAdminSession(true);
+            startApp();
+            return;
+          }
+
+          loginError.textContent = "Clave incorrecta o no autorizada";
+          show(loginError);
+        } catch (e) {
+          loginError.textContent = "Clave incorrecta o no autorizada";
+          show(loginError);
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Ingresar";
+        }
+      }
+
+      function startApp() {
+        hide(loginScreen);
+        show(appRoot);
+
+        if (state.appStarted) return;
+        state.appStarted = true;
+        renderSummary();
+        renderTable();
+        scheduleRefresh();
+        setTimeout(fetchAndRender, 0);
+      }
+
+      function scheduleRefresh() {
+        if (state.refreshTimer) return;
+        state.refreshTimer = setInterval(fetchAndRender, 60000);
+      }
+
+      async function callAppsScript(action, payload = {}, showGlobalError = true) {
+        const params = new URLSearchParams({
+          action,
+          apiKey: APPS_SCRIPT_API_KEY,
+          ...payload,
+        });
+
+        try {
+          const resp = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+          const data = await resp.json();
+          if (!data.ok) throw new Error(data.error || "Error del servidor");
+          return data;
+        } catch (e) {
+          if (showGlobalError) showStatus(`Error: ${e.message}`, true);
+          throw e;
+        }
+      }
+
+      async function cargarUsuarios() {
+        const data = await callAppsScript("listarUsuarios");
+        return data.usuarios || [];
+      }
+
+      async function fetchAndRender() {
+        if (state.loadingUsers) return;
+        state.loadingUsers = true;
+        closeActionMenu();
+        showStatus("Cargando usuarios...");
+        renderLoadingRow();
+
+        try {
+          state.users = await cargarUsuarios();
+          showStatus(`Actualizado ${new Date().toLocaleTimeString()}`);
+          renderSummary();
+          renderTable();
+          checkPendingPayments();
+        } catch (e) {
+          renderTable();
+        } finally {
+          state.loadingUsers = false;
+        }
+      }
+
+      function getFilteredUsers() {
+        let filtered = [...state.users];
+
+        if (state.activeFilter !== "todos") {
+          filtered = filtered.filter((u) => {
+            const estado = upper(u.Estado);
+            const estadoPago = upper(u.EstadoPago);
+
+            return (
+              (state.activeFilter === "pendientes" && estado === "PENDIENTE") ||
+              (state.activeFilter === "prueba" && estado === "PRUEBA") ||
+              (state.activeFilter === "activos" && estado === "ACTIVO") ||
+              (state.activeFilter === "bloqueados" && estado === "BLOQUEADO") ||
+              (state.activeFilter === "vencidos" && estado === "VENCIDO") ||
+              (state.activeFilter === "pagosPendientes" && estadoPago === "PENDIENTE")
+            );
+          });
+        }
+
+        const q = state.search.toLowerCase();
+        if (q) {
+          filtered = filtered.filter((u) =>
+            [u.Nombre, u.Apellido, u.Mail, u.Telefono, u.AliasCliente]
+              .some((v) => normalize(v).toLowerCase().includes(q)),
+          );
+        }
+
+        return filtered;
+      }
+
+      function countUsers(filter) {
+        return state.users.filter((u) => {
+          const estado = upper(u.Estado);
+          const estadoPago = upper(u.EstadoPago);
+          if (filter === "todos") return true;
+          if (filter === "pendientes") return estado === "PENDIENTE";
+          if (filter === "prueba") return estado === "PRUEBA";
+          if (filter === "activos") return estado === "ACTIVO";
+          if (filter === "bloqueados") return estado === "BLOQUEADO";
+          if (filter === "vencidos") return estado === "VENCIDO";
+          if (filter === "pagosPendientes") return estadoPago === "PENDIENTE";
+          return false;
+        }).length;
+      }
+
+      function renderSummary() {
+        const cards = [
+          { key: "todos", label: "Todos" },
+          { key: "pendientes", label: "Pendientes" },
+          { key: "prueba", label: "En prueba" },
+          { key: "activos", label: "Activos" },
+          { key: "bloqueados", label: "Bloqueados" },
+          { key: "vencidos", label: "Vencidos" },
+          { key: "pagosPendientes", label: "Pagos pendientes" },
+        ];
+
+        summaryCards.innerHTML = cards
+          .map(
+            (card) => `
+              <button class="summary-card ${state.activeFilter === card.key ? "active" : ""}" data-filter="${card.key}">
+                <span class="summary-label">${card.label}</span>
+                <span class="summary-value">${countUsers(card.key)}</span>
+              </button>
+            `,
+          )
+          .join("");
+      }
+
+      function renderLoadingRow() {
+        usersTableBody.innerHTML = `<tr><td colspan="13" class="empty-state">Cargando usuarios...</td></tr>`;
+        resultCount.textContent = "Cargando usuarios...";
+      }
+
+      function renderTable() {
+        const rows = getFilteredUsers();
+        resultCount.textContent = `${rows.length} de ${state.users.length} usuarios`;
+
+        if (!rows.length) {
+          usersTableBody.innerHTML = `<tr><td colspan="13" class="empty-state">Sin usuarios</td></tr>`;
+          return;
+        }
+
+        usersTableBody.innerHTML = rows
+          .map(
+            (u, index) => `
+              <tr>
+                <td>
+                  <div class="user-name">${escapeHtml(`${u.Nombre || ""} ${u.Apellido || ""}`.trim() || "-")}</div>
+                  <div class="muted">${escapeHtml(u.Observaciones || "")}</div>
+                </td>
+                <td>${escapeHtml(u.Telefono || "-")}</td>
+                <td>${escapeHtml(u.Mail || "-")}</td>
+                <td>${escapeHtml(u.Rol || "-")}</td>
+                <td>${getEstadoBadge(u.Estado)}</td>
+                <td>${getPagoBadge(u.Pago)}</td>
+                <td>${getEstadoPagoBadge(u.EstadoPago)}</td>
+                <td>${formatDate(u.FechaVencimiento)}</td>
+                <td>${escapeHtml(u.AliasCliente || "-")}</td>
+                <td>${escapeHtml(u.Monto || "-")}</td>
+                <td>${escapeHtml(u.PlanSolicitado || "-")}</td>
+                <td>${formatDateTime(u.UltimoAcceso)}</td>
+                <td class="actions-cell">
+                  <button class="action-toggle" data-user-index="${index}">Acciones</button>
+                </td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      function badge(value, className, fallback = "-") {
+        const text = normalize(value) || fallback;
+        return `<span class="badge ${className}">${escapeHtml(text)}</span>`;
+      }
+
+      function getEstadoBadge(estado) {
+        const map = {
+          PENDIENTE: "badge-pendiente",
+          PRUEBA: "badge-prueba",
+          ACTIVO: "badge-activo",
+          BLOQUEADO: "badge-bloqueado",
+          VENCIDO: "badge-vencido",
+        };
+        return badge(estado, map[upper(estado)] || "badge-muted");
+      }
+
+      function getPagoBadge(pago) {
+        return badge(pago, upper(pago) === "SI" ? "badge-pago-si" : "badge-pago-no");
+      }
+
+      function getEstadoPagoBadge(estadoPago) {
+        const map = {
+          PENDIENTE: "badge-estado-pendiente",
+          APROBADO: "badge-estado-aprobado",
+          RECHAZADO: "badge-estado-rechazado",
+        };
+        return badge(estadoPago, map[upper(estadoPago)] || "badge-muted");
+      }
+
+      function getActionIndicator(action, usuario) {
+        const estado = upper(usuario.Estado);
+        const pago = upper(usuario.Pago);
+        const rol = upper(usuario.Rol);
+        const estadoPago = upper(usuario.EstadoPago);
+        const tieneVencimiento = Boolean(normalize(usuario.FechaVencimiento));
+        const tieneObs = Boolean(normalize(usuario.Observaciones));
+        const muted = { label: "—", className: "indicator-muted" };
+
+        if (action === "prueba" && estado === "PRUEBA") {
+          return { label: "✓", className: "indicator-ok" };
+        }
+
+        if (action === "aprobar" && estado === "ACTIVO" && pago === "SI" && rol === "ALUMNO") {
+          return { label: "✓", className: "indicator-ok" };
+        }
+
+        if (action === "bloquear" && estado === "BLOQUEADO") {
+          return { label: "•", className: "indicator-danger" };
+        }
+
+        if (action === "vencer" && estado === "VENCIDO") {
+          return { label: "•", className: "indicator-danger" };
+        }
+
+        if (action === "renovar" && estado === "ACTIVO" && pago === "SI" && tieneVencimiento) {
+          return { label: "✓", className: "indicator-ok" };
+        }
+
+        if (action === "rechazarPago" && estadoPago === "PENDIENTE") {
+          return { label: "•", className: "indicator-warning" };
+        }
+
+        if (action === "rechazarPago" && estadoPago === "RECHAZADO") {
+          return { label: "•", className: "indicator-danger" };
+        }
+
+        if (action === "whatsapp") {
+          return { label: "WA", className: "indicator-muted" };
+        }
+
+        if (action === "obs" && tieneObs) {
+          return { label: "✓", className: "indicator-ok" };
+        }
+
+        return muted;
+      }
+
+      function renderActionRow(action, label, usuario) {
+        const indicator = getActionIndicator(action, usuario);
+        const isCurrent = indicator.className !== "indicator-muted" && action !== "whatsapp";
+
+        return `
+          <button class="action-row ${isCurrent ? "is-current" : ""}" data-action="${action}">
+            <span class="action-label">${label}</span>
+            <span class="action-indicator ${indicator.className}">${indicator.label}</span>
+          </button>
+        `;
+      }
+
+      function openActionMenu(button, usuario) {
+        closeActionMenu();
+
+        const rect = button.getBoundingClientRect();
+        const menu = document.createElement("div");
+        menu.className = "action-menu";
+        const actions = [
+          ["prueba", "Prueba 2d"],
+          ["aprobar", "Aprobar PRO"],
+          ["bloquear", "Bloquear"],
+          ["vencer", "Vencer"],
+          ["renovar", "Renovar 30d"],
+          ["rechazarPago", "Rechazar Pago"],
+          ["whatsapp", "WhatsApp"],
+          ["obs", "Guardar Obs"],
+        ];
+        menu.innerHTML = `
+          ${actions.map(([action, label]) => renderActionRow(action, label, usuario)).join("")}
+        `;
+
+        document.body.appendChild(menu);
+        const gap = 8;
+        const menuWidth = menu.offsetWidth;
+        const menuHeight = menu.offsetHeight;
+        const left = Math.max(
+          gap,
+          Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - gap),
+        );
+        const preferredTop = rect.bottom + 6;
+        const top = preferredTop + menuHeight > window.innerHeight - gap
+          ? Math.max(gap, rect.top - menuHeight - 6)
+          : preferredTop;
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        state.menuEl = menu;
+
+        menu.addEventListener("click", async (event) => {
+          const actionButton = event.target.closest("button[data-action]");
+          if (!actionButton) return;
+          const action = actionButton.dataset.action;
+          closeActionMenu();
+          await handleUserAction(action, usuario);
+        });
+      }
+
+      function closeActionMenu() {
+        if (state.menuEl) {
+          state.menuEl.remove();
+          state.menuEl = null;
+        }
+      }
+
+      async function handleUserAction(action, usuario) {
+        if (!usuario) {
+          showStatus("Usuario no encontrado en la tabla filtrada", true);
+          return;
+        }
+
+        console.log("[ADMIN ACTION]", action, usuario);
+
+        const id = usuario.IDUsuario;
+        const telRaw = usuario.Telefono ?? "";
+        const tel = String(telRaw).trim().replace(/^\+?/, "");
+        const payload = { idUsuario: id, telefono: tel };
+        let data = null;
+
+        console.log("[ADMIN TEL RAW]", usuario.Telefono, typeof usuario.Telefono);
+        console.log("[ADMIN TEL NORMALIZED]", tel);
+        console.log("[ADMIN PAYLOAD]", payload);
+
+        try {
+        switch (action) {
+          case "prueba":
+            if (
+              !(await showConfirmModal({
+                title: "Activar prueba",
+                message: "¿Confirmar prueba gratis por 2 días para este usuario?",
+                confirmText: "Activar prueba",
+                cancelText: "Cancelar",
+                tone: "success",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminPrueba2Dias", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "aprobar":
+            if (
+              !(await showConfirmModal({
+                title: "Aprobar PRO",
+                message: "¿Aprobar este usuario como PRO por 30 días?",
+                confirmText: "Aprobar PRO",
+                cancelText: "Cancelar",
+                tone: "success",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminAprobarPro", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "bloquear":
+            if (
+              !(await showConfirmModal({
+                title: "Bloquear usuario",
+                message: "Este usuario no podrá acceder a la app. ¿Confirmás el bloqueo?",
+                confirmText: "Bloquear",
+                cancelText: "Cancelar",
+                tone: "danger",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminBloquear", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "vencer":
+            if (
+              !(await showConfirmModal({
+                title: "Marcar como vencido",
+                message: "El acceso quedará vencido inmediatamente. ¿Confirmás?",
+                confirmText: "Vencer",
+                cancelText: "Cancelar",
+                tone: "warning",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminVencer", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "renovar":
+            if (
+              !(await showConfirmModal({
+                title: "Renovar acceso",
+                message: "¿Renovar el acceso de este usuario por 30 días?",
+                confirmText: "Renovar 30 días",
+                cancelText: "Cancelar",
+                tone: "success",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminRenovar30Dias", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "rechazarPago":
+            if (
+              !(await showConfirmModal({
+                title: "Rechazar pago",
+                message: "¿Confirmás que querés rechazar el pago solicitado?",
+                confirmText: "Rechazar pago",
+                cancelText: "Cancelar",
+                tone: "danger",
+              }))
+            )
+              return;
+            data = await callAppsScript("adminRechazarPago", payload);
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          case "whatsapp": {
+            const num = tel.startsWith("54") ? tel : `54${tel}`;
+            const waUrl = `https://wa.me/${num}?text=${encodeURIComponent("Hola, te escribo por tu acceso a Rutina Gym.")}`;
+            window.open(waUrl, "_blank");
+            return;
+          }
+          case "obs": {
+            const observaciones = await showInputModal({
+              title: "Guardar observación",
+              message: "Escribí la observación para este usuario.",
+              value: usuario.Observaciones || "",
+              placeholder: "Observación...",
+              confirmText: "Guardar",
+              cancelText: "Cancelar",
+            });
+            if (observaciones === null) return;
+            data = await callAppsScript("adminGuardarObservacion", {
+              ...payload,
+              observaciones,
+            });
+            console.log("[ADMIN RESPONSE]", data);
+            break;
+          }
+          default:
+            console.warn("Acción desconocida", action);
+            return;
+        }
+
+        showStatus(data?.message || "Acción ejecutada");
+        showToast(data?.message || "Acción ejecutada", "success");
+        await fetchAndRender();
+        showStatus(data?.message || "Acción ejecutada");
+        } catch (e) {
+          showStatus(`Error: ${e.message}`, true);
+          showToast(e.message || "Error", "error");
+        }
+      }
+
+      function checkPendingPayments() {
+        const pendientes = state.users.filter((u) => upper(u.EstadoPago) === "PENDIENTE").length;
+
+        if (pendientes > 0) {
+          paymentAlert.textContent = `Hay ${pendientes} pagos pendientes de revisión`;
+          show(paymentAlert);
+
+          if (state.lastPendingPayments !== null && pendientes > state.lastPendingPayments) {
+            playPaymentSound();
+          }
+        } else {
+          hide(paymentAlert);
+        }
+
+        state.lastPendingPayments = pendientes;
+      }
+
+      function playPaymentSound() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.frequency.value = 440;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.18);
+        } catch (e) {}
+      }
+
+      loginBtn.addEventListener("click", validarLoginAdmin);
+      passwordInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") validarLoginAdmin();
+      });
+      logoutBtn.addEventListener("click", () => {
+        setAdminSession(false);
+        location.reload();
+      });
+      refreshBtn.addEventListener("click", fetchAndRender);
+      searchInput.addEventListener("input", (event) => {
+        state.search = event.target.value.trim();
+        renderTable();
+      });
+      summaryCards.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-filter]");
+        if (!card) return;
+        state.activeFilter = card.dataset.filter;
+        renderSummary();
+        renderTable();
+      });
+      usersTableBody.addEventListener("click", (event) => {
+        const button = event.target.closest(".action-toggle");
+        if (!button) return;
+        const usuario = getFilteredUsers()[Number(button.dataset.userIndex)];
+        if (usuario) openActionMenu(button, usuario);
+      });
+      document.addEventListener("click", (event) => {
+        if (!state.menuEl) return;
+        if (event.target.closest(".action-menu") || event.target.closest(".action-toggle")) return;
+        closeActionMenu();
+      });
+      window.addEventListener("resize", closeActionMenu);
+      window.addEventListener("scroll", closeActionMenu, true);
+
+      if (isAdminLogged()) {
+        startApp();
+      } else {
+        show(loginScreen);
+      }
+    </script>
+  </body>
+</html>
