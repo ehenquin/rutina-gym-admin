@@ -32,7 +32,11 @@
         margin: 0;
         min-height: 100vh;
         background:
-          radial-gradient(circle at 20% 0%, rgba(79, 140, 255, 0.15), transparent 34%),
+          radial-gradient(
+            circle at 20% 0%,
+            rgba(79, 140, 255, 0.15),
+            transparent 34%
+          ),
           linear-gradient(180deg, #090b10 0%, #0d1119 100%);
         color: var(--text);
         font-family: var(--font);
@@ -662,9 +666,16 @@
     <div id="loginScreen" class="hidden">
       <h2>Acceso administrador</h2>
       <p class="login-subtitle">Panel privado de Rutina Gym</p>
-      <input type="password" id="adminPassword" placeholder="Contraseña" autocomplete="current-password" />
+      <input
+        type="password"
+        id="adminPassword"
+        placeholder="Contraseña"
+        autocomplete="current-password"
+      />
       <button id="loginBtn" class="primary-btn">Ingresar</button>
-      <p id="loginError" class="login-error hidden">Clave incorrecta o no autorizada</p>
+      <p id="loginError" class="login-error hidden">
+        Clave incorrecta o no autorizada
+      </p>
     </div>
 
     <main id="app" class="app-shell hidden">
@@ -685,7 +696,11 @@
 
       <section class="table-panel">
         <div class="table-tools">
-          <input id="searchInput" type="search" placeholder="Buscar por nombre, mail, teléfono o alias..." />
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Buscar por nombre, mail, teléfono o alias..."
+          />
           <span id="resultCount" class="result-count">Sin datos cargados</span>
         </div>
         <div class="table-wrap">
@@ -720,8 +735,8 @@
     <script>
       const APPS_SCRIPT_URL =
         "https://script.google.com/macros/s/AKfycbyj7rZxYR5KVnpquzad0hvklgVnhMOA3Ybe4UTYWk4nNVyLZ1C0-4xYUQEM29wpFiBq/exec";
-      const APPS_SCRIPT_API_KEY = "CAMBIAR_ESTA_CLAVE_PRIVADA_2026";
-      const STORAGE_KEY = "rutina_gym_admin_ok";
+      const STORAGE_KEY = "rutina_gym_admin_token";
+      const LEGACY_STORAGE_KEY = "rutina_gym_admin_ok";
 
       const state = {
         users: [],
@@ -748,12 +763,23 @@
       const resultCount = document.getElementById("resultCount");
       const usersTableBody = document.getElementById("usersTableBody");
 
-      function setAdminSession(ok) {
-        localStorage.setItem(STORAGE_KEY, ok ? "true" : "false");
+      function setAdminSession(token) {
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+
+        if (token) {
+          localStorage.setItem(STORAGE_KEY, token);
+          return;
+        }
+
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      function getAdminToken() {
+        return localStorage.getItem(STORAGE_KEY) || "";
       }
 
       function isAdminLogged() {
-        return localStorage.getItem(STORAGE_KEY) === "true";
+        return !!getAdminToken();
       }
 
       function show(el) {
@@ -862,8 +888,12 @@
           overlay.addEventListener("click", (event) => {
             if (event.target === overlay) finish(false);
           });
-          panel.querySelector("[data-modal-cancel]").addEventListener("click", () => finish(false));
-          panel.querySelector("[data-modal-confirm]").addEventListener("click", () => finish(true));
+          panel
+            .querySelector("[data-modal-cancel]")
+            .addEventListener("click", () => finish(false));
+          panel
+            .querySelector("[data-modal-confirm]")
+            .addEventListener("click", () => finish(true));
           document.addEventListener("keydown", onKeyDown);
           panel.querySelector("[data-modal-confirm]").focus();
         });
@@ -899,8 +929,12 @@
           overlay.addEventListener("click", (event) => {
             if (event.target === overlay) finish(null);
           });
-          panel.querySelector("[data-modal-cancel]").addEventListener("click", () => finish(null));
-          panel.querySelector("[data-modal-confirm]").addEventListener("click", () => finish(input.value));
+          panel
+            .querySelector("[data-modal-cancel]")
+            .addEventListener("click", () => finish(null));
+          panel
+            .querySelector("[data-modal-confirm]")
+            .addEventListener("click", () => finish(input.value));
           document.addEventListener("keydown", onKeyDown);
           input.focus();
           input.select();
@@ -922,9 +956,17 @@
         loginBtn.textContent = "Validando...";
 
         try {
-          const data = await callAppsScript("validarClavePrivado", { clave }, false);
-          if (data.ok === true && data.autorizado === true) {
-            setAdminSession(true);
+          const data = await callAppsScript(
+            "validarClavePrivado",
+            { clave },
+            false,
+          );
+          if (
+            data.ok === true &&
+            data.autorizado === true &&
+            data.adminToken
+          ) {
+            setAdminSession(data.adminToken);
             startApp();
             return;
           }
@@ -957,20 +999,54 @@
         state.refreshTimer = setInterval(fetchAndRender, 60000);
       }
 
-      async function callAppsScript(action, payload = {}, showGlobalError = true) {
-        const params = new URLSearchParams({
+      function handleExpiredAdminSession() {
+        setAdminSession("");
+
+        if (state.refreshTimer) {
+          clearInterval(state.refreshTimer);
+          state.refreshTimer = null;
+        }
+
+        state.appStarted = false;
+        state.loadingUsers = false;
+        showToast("Sesi\u00f3n vencida", "warning");
+        hide(appRoot);
+        show(loginScreen);
+        passwordInput.value = "";
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Ingresar";
+      }
+
+      async function callAppsScript(
+        action,
+        payload = {},
+        showGlobalError = true,
+      ) {
+        const requestPayload = {
           action,
-          apiKey: APPS_SCRIPT_API_KEY,
           ...payload,
-        });
+        };
+
+        if (action !== "validarClavePrivado") {
+          requestPayload.adminToken = getAdminToken();
+        }
+
+        const params = new URLSearchParams(requestPayload);
 
         try {
           const resp = await fetch(`${APPS_SCRIPT_URL}?${params}`);
           const data = await resp.json();
+          if (data.error === "ADMIN_TOKEN_INVALIDO") {
+            handleExpiredAdminSession();
+            const error = new Error("Sesi\u00f3n vencida");
+            error.sessionExpired = true;
+            throw error;
+          }
           if (!data.ok) throw new Error(data.error || "Error del servidor");
           return data;
         } catch (e) {
-          if (showGlobalError) showStatus(`Error: ${e.message}`, true);
+          if (showGlobalError && !e.sessionExpired)
+            showStatus(`Error: ${e.message}`, true);
           throw e;
         }
       }
@@ -1014,7 +1090,8 @@
               (state.activeFilter === "activos" && estado === "ACTIVO") ||
               (state.activeFilter === "bloqueados" && estado === "BLOQUEADO") ||
               (state.activeFilter === "vencidos" && estado === "VENCIDO") ||
-              (state.activeFilter === "pagosPendientes" && estadoPago === "PENDIENTE")
+              (state.activeFilter === "pagosPendientes" &&
+                estadoPago === "PENDIENTE")
             );
           });
         }
@@ -1022,8 +1099,9 @@
         const q = state.search.toLowerCase();
         if (q) {
           filtered = filtered.filter((u) =>
-            [u.Nombre, u.Apellido, u.Mail, u.Telefono, u.AliasCliente]
-              .some((v) => normalize(v).toLowerCase().includes(q)),
+            [u.Nombre, u.Apellido, u.Mail, u.Telefono, u.AliasCliente].some(
+              (v) => normalize(v).toLowerCase().includes(q),
+            ),
           );
         }
 
@@ -1127,7 +1205,10 @@
       }
 
       function getPagoBadge(pago) {
-        return badge(pago, upper(pago) === "SI" ? "badge-pago-si" : "badge-pago-no");
+        return badge(
+          pago,
+          upper(pago) === "SI" ? "badge-pago-si" : "badge-pago-no",
+        );
       }
 
       function getEstadoPagoBadge(estadoPago) {
@@ -1152,7 +1233,12 @@
           return { label: "✓", className: "indicator-ok" };
         }
 
-        if (action === "aprobar" && estado === "ACTIVO" && pago === "SI" && rol === "ALUMNO") {
+        if (
+          action === "aprobar" &&
+          estado === "ACTIVO" &&
+          pago === "SI" &&
+          rol === "ALUMNO"
+        ) {
           return { label: "✓", className: "indicator-ok" };
         }
 
@@ -1164,7 +1250,12 @@
           return { label: "•", className: "indicator-danger" };
         }
 
-        if (action === "renovar" && estado === "ACTIVO" && pago === "SI" && tieneVencimiento) {
+        if (
+          action === "renovar" &&
+          estado === "ACTIVO" &&
+          pago === "SI" &&
+          tieneVencimiento
+        ) {
           return { label: "✓", className: "indicator-ok" };
         }
 
@@ -1189,7 +1280,8 @@
 
       function renderActionRow(action, label, usuario) {
         const indicator = getActionIndicator(action, usuario);
-        const isCurrent = indicator.className !== "indicator-muted" && action !== "whatsapp";
+        const isCurrent =
+          indicator.className !== "indicator-muted" && action !== "whatsapp";
 
         return `
           <button class="action-row ${isCurrent ? "is-current" : ""}" data-action="${action}">
@@ -1228,9 +1320,10 @@
           Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - gap),
         );
         const preferredTop = rect.bottom + 6;
-        const top = preferredTop + menuHeight > window.innerHeight - gap
-          ? Math.max(gap, rect.top - menuHeight - 6)
-          : preferredTop;
+        const top =
+          preferredTop + menuHeight > window.innerHeight - gap
+            ? Math.max(gap, rect.top - menuHeight - 6)
+            : preferredTop;
         menu.style.left = `${left}px`;
         menu.style.top = `${top}px`;
         state.menuEl = menu;
@@ -1265,142 +1358,155 @@
         const payload = { idUsuario: id, telefono: tel };
         let data = null;
 
-        console.log("[ADMIN TEL RAW]", usuario.Telefono, typeof usuario.Telefono);
+        console.log(
+          "[ADMIN TEL RAW]",
+          usuario.Telefono,
+          typeof usuario.Telefono,
+        );
         console.log("[ADMIN TEL NORMALIZED]", tel);
         console.log("[ADMIN PAYLOAD]", payload);
 
         try {
-        switch (action) {
-          case "prueba":
-            if (
-              !(await showConfirmModal({
-                title: "Activar prueba",
-                message: "¿Confirmar prueba gratis por 2 días para este usuario?",
-                confirmText: "Activar prueba",
-                cancelText: "Cancelar",
-                tone: "success",
-              }))
-            )
+          switch (action) {
+            case "prueba":
+              if (
+                !(await showConfirmModal({
+                  title: "Activar prueba",
+                  message:
+                    "¿Confirmar prueba gratis por 2 días para este usuario?",
+                  confirmText: "Activar prueba",
+                  cancelText: "Cancelar",
+                  tone: "success",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminPrueba2Dias", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "aprobar":
+              if (
+                !(await showConfirmModal({
+                  title: "Aprobar PRO",
+                  message: "¿Aprobar este usuario como PRO por 30 días?",
+                  confirmText: "Aprobar PRO",
+                  cancelText: "Cancelar",
+                  tone: "success",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminAprobarPro", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "bloquear":
+              if (
+                !(await showConfirmModal({
+                  title: "Bloquear usuario",
+                  message:
+                    "Este usuario no podrá acceder a la app. ¿Confirmás el bloqueo?",
+                  confirmText: "Bloquear",
+                  cancelText: "Cancelar",
+                  tone: "danger",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminBloquear", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "vencer":
+              if (
+                !(await showConfirmModal({
+                  title: "Marcar como vencido",
+                  message:
+                    "El acceso quedará vencido inmediatamente. ¿Confirmás?",
+                  confirmText: "Vencer",
+                  cancelText: "Cancelar",
+                  tone: "warning",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminVencer", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "renovar":
+              if (
+                !(await showConfirmModal({
+                  title: "Renovar acceso",
+                  message: "¿Renovar el acceso de este usuario por 30 días?",
+                  confirmText: "Renovar 30 días",
+                  cancelText: "Cancelar",
+                  tone: "success",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminRenovar30Dias", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "rechazarPago":
+              if (
+                !(await showConfirmModal({
+                  title: "Rechazar pago",
+                  message: "¿Confirmás que querés rechazar el pago solicitado?",
+                  confirmText: "Rechazar pago",
+                  cancelText: "Cancelar",
+                  tone: "danger",
+                }))
+              )
+                return;
+              data = await callAppsScript("adminRechazarPago", payload);
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            case "whatsapp": {
+              const num = tel.startsWith("54") ? tel : `54${tel}`;
+              const waUrl = `https://wa.me/${num}?text=${encodeURIComponent("Hola, te escribo por tu acceso a Rutina Gym.")}`;
+              window.open(waUrl, "_blank");
               return;
-            data = await callAppsScript("adminPrueba2Dias", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "aprobar":
-            if (
-              !(await showConfirmModal({
-                title: "Aprobar PRO",
-                message: "¿Aprobar este usuario como PRO por 30 días?",
-                confirmText: "Aprobar PRO",
+            }
+            case "obs": {
+              const observaciones = await showInputModal({
+                title: "Guardar observación",
+                message: "Escribí la observación para este usuario.",
+                value: usuario.Observaciones || "",
+                placeholder: "Observación...",
+                confirmText: "Guardar",
                 cancelText: "Cancelar",
-                tone: "success",
-              }))
-            )
+              });
+              if (observaciones === null) return;
+              data = await callAppsScript("adminGuardarObservacion", {
+                ...payload,
+                observaciones,
+              });
+              console.log("[ADMIN RESPONSE]", data);
+              break;
+            }
+            default:
+              console.warn("Acción desconocida", action);
               return;
-            data = await callAppsScript("adminAprobarPro", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "bloquear":
-            if (
-              !(await showConfirmModal({
-                title: "Bloquear usuario",
-                message: "Este usuario no podrá acceder a la app. ¿Confirmás el bloqueo?",
-                confirmText: "Bloquear",
-                cancelText: "Cancelar",
-                tone: "danger",
-              }))
-            )
-              return;
-            data = await callAppsScript("adminBloquear", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "vencer":
-            if (
-              !(await showConfirmModal({
-                title: "Marcar como vencido",
-                message: "El acceso quedará vencido inmediatamente. ¿Confirmás?",
-                confirmText: "Vencer",
-                cancelText: "Cancelar",
-                tone: "warning",
-              }))
-            )
-              return;
-            data = await callAppsScript("adminVencer", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "renovar":
-            if (
-              !(await showConfirmModal({
-                title: "Renovar acceso",
-                message: "¿Renovar el acceso de este usuario por 30 días?",
-                confirmText: "Renovar 30 días",
-                cancelText: "Cancelar",
-                tone: "success",
-              }))
-            )
-              return;
-            data = await callAppsScript("adminRenovar30Dias", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "rechazarPago":
-            if (
-              !(await showConfirmModal({
-                title: "Rechazar pago",
-                message: "¿Confirmás que querés rechazar el pago solicitado?",
-                confirmText: "Rechazar pago",
-                cancelText: "Cancelar",
-                tone: "danger",
-              }))
-            )
-              return;
-            data = await callAppsScript("adminRechazarPago", payload);
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          case "whatsapp": {
-            const num = tel.startsWith("54") ? tel : `54${tel}`;
-            const waUrl = `https://wa.me/${num}?text=${encodeURIComponent("Hola, te escribo por tu acceso a Rutina Gym.")}`;
-            window.open(waUrl, "_blank");
-            return;
           }
-          case "obs": {
-            const observaciones = await showInputModal({
-              title: "Guardar observación",
-              message: "Escribí la observación para este usuario.",
-              value: usuario.Observaciones || "",
-              placeholder: "Observación...",
-              confirmText: "Guardar",
-              cancelText: "Cancelar",
-            });
-            if (observaciones === null) return;
-            data = await callAppsScript("adminGuardarObservacion", {
-              ...payload,
-              observaciones,
-            });
-            console.log("[ADMIN RESPONSE]", data);
-            break;
-          }
-          default:
-            console.warn("Acción desconocida", action);
-            return;
-        }
 
-        showStatus(data?.message || "Acción ejecutada");
-        showToast(data?.message || "Acción ejecutada", "success");
-        await fetchAndRender();
-        showStatus(data?.message || "Acción ejecutada");
+          showStatus(data?.message || "Acción ejecutada");
+          showToast(data?.message || "Acción ejecutada", "success");
+          await fetchAndRender();
+          showStatus(data?.message || "Acción ejecutada");
         } catch (e) {
+          if (e.sessionExpired) return;
           showStatus(`Error: ${e.message}`, true);
           showToast(e.message || "Error", "error");
         }
       }
 
       function checkPendingPayments() {
-        const pendientes = state.users.filter((u) => upper(u.EstadoPago) === "PENDIENTE").length;
+        const pendientes = state.users.filter(
+          (u) => upper(u.EstadoPago) === "PENDIENTE",
+        ).length;
 
         if (pendientes > 0) {
           paymentAlert.textContent = `Hay ${pendientes} pagos pendientes de revisión`;
           show(paymentAlert);
 
-          if (state.lastPendingPayments !== null && pendientes > state.lastPendingPayments) {
+          if (
+            state.lastPendingPayments !== null &&
+            pendientes > state.lastPendingPayments
+          ) {
             playPaymentSound();
           }
         } else {
@@ -1429,7 +1535,7 @@
         if (event.key === "Enter") validarLoginAdmin();
       });
       logoutBtn.addEventListener("click", () => {
-        setAdminSession(false);
+        setAdminSession("");
         location.reload();
       });
       refreshBtn.addEventListener("click", fetchAndRender);
@@ -1452,7 +1558,11 @@
       });
       document.addEventListener("click", (event) => {
         if (!state.menuEl) return;
-        if (event.target.closest(".action-menu") || event.target.closest(".action-toggle")) return;
+        if (
+          event.target.closest(".action-menu") ||
+          event.target.closest(".action-toggle")
+        )
+          return;
         closeActionMenu();
       });
       window.addEventListener("resize", closeActionMenu);
